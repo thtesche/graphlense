@@ -58,9 +58,27 @@ body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 1.5rem;
+  padding: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.photo-grid.size-sm {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.photo-grid.size-m {
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 1.5rem;
+}
+
+.photo-grid.size-xl {
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 2rem;
   padding: 2rem;
-  max-width: 1600px;
-  margin: 0 auto;
 }
 
 .photo-card {

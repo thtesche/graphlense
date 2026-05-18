@@ -59,6 +59,13 @@ function App() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'graph'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [thumbnailSize, setThumbnailSize] = useState(() => {
+    return getCookie('thumbnailSize') || 'm';
+  });
+
+  useEffect(() => {
+    setCookie('thumbnailSize', thumbnailSize, 14);
+  }, [thumbnailSize]);
 
   const fgRef = useRef();
   const imageCache = useRef({});
@@ -72,7 +79,7 @@ function App() {
   const NAS_BASE = `${window.location.protocol}//${window.location.hostname}`;
 
   const getThumbnailUrl = (id, cacheKey) => {
-    let url = `${NAS_BASE}:5001/synofoto/api/v2/p/Thumbnail/get?id=${id}&cache_key="${id}_${cacheKey}"&type="unit"&size="m"`;
+    let url = `${NAS_BASE}:5001/synofoto/api/v2/p/Thumbnail/get?id=${id}&cache_key="${id}_${cacheKey}"&type="unit"&size="${thumbnailSize}"`;
     if (authData.synotoken) url += `&SynoToken=${authData.synotoken}`;
     if (authData.sid) url += `&_sid=${authData.sid}`;
     return url;
@@ -232,6 +239,30 @@ function App() {
           <div className="stats-info" style={{ marginRight: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             Nodes: {graphData.nodes.length} | Links: {graphData.links.length}
           </div>
+          
+          <div className="size-selector-chips" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '2px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            {['sm', 'm', 'xl'].map(size => (
+              <button
+                key={size}
+                onClick={() => setThumbnailSize(size)}
+                style={{
+                  background: thumbnailSize === size ? 'var(--accent-color)' : 'transparent',
+                  color: thumbnailSize === size ? 'var(--bg-color)' : 'var(--text-secondary)',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '0.35rem 0.75rem',
+                  fontSize: '0.8rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  textTransform: 'uppercase',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                {size}
+              </button>
+            ))}
+          </div>
+
           <button onClick={toggleView} className="view-toggle">
             {viewMode === 'grid' ? '🌐 Graph Ansicht' : '📱 Grid Ansicht'}
           </button>
@@ -246,7 +277,7 @@ function App() {
 
       <main className="content-area">
         {viewMode === 'grid' ? (
-          <div className="photo-grid">
+          <div className={`photo-grid size-${thumbnailSize}`}>
             {photos.length > 0 ? (
               photos.map(photo => (
                 <div key={photo.id} className="photo-card">
@@ -280,7 +311,8 @@ function App() {
                   if (node.type === 'Photo') {
                     const imgUrl = getThumbnailUrl(node.unit_id, node.cache_key);
 
-                    if (!imageCache.current[node.id]) {
+                    const imageKey = `${node.id}_${thumbnailSize}`;
+                    if (!imageCache.current[imageKey]) {
                       const img = new Image();
                       img.src = imgUrl;
                       img.retries = 0;
@@ -293,10 +325,10 @@ function App() {
                           }, 2000);
                         }
                       };
-                      imageCache.current[node.id] = img;
+                      imageCache.current[imageKey] = img;
                     }
 
-                    const img = imageCache.current[node.id];
+                    const img = imageCache.current[imageKey];
 
                     ctx.save();
                     ctx.beginPath();
