@@ -43,8 +43,96 @@ class ErrorBoundary extends Component {
   }
 }
 
+const translations = {
+  de: {
+    grouped: '🗂️ Gruppiert',
+    filter: '🔍 Filtern',
+    graph: '🌐 Graph',
+    family: 'Familie',
+    person: 'Person',
+    location: 'Land/Ort',
+    country: 'Land',
+    allFamilies: 'Alle Familien',
+    allPersons: 'Alle Personen',
+    allCountries: 'Alle Länder',
+    resetFilters: '✕ Filter zurücksetzen',
+    searchingPhotos: 'Suche Fotos...',
+    noPhotos: 'Keine Fotos gefunden.',
+    groupingPhotos: 'Gruppiere Fotos...',
+    noGroupedPhotos: 'Keine gruppierten Fotos gefunden.',
+    collapse: '▲ Einklappen',
+    showAll: (count) => `▼ Alle anzeigen (${count} Bilder)`,
+    hello: (name) => `Hallo, ${name} 👋`,
+    guest: 'Gast',
+    logout: 'Logout',
+    nasLogin: 'NAS Login',
+    account: 'Account',
+    password: 'Passwort',
+    otp: 'OTP Code (Optional)',
+    loggingIn: 'Logge ein...',
+    login: 'Einloggen',
+    loading: '🚀 GraphStation lädt...',
+    error: (msg) => `❌ Fehler: ${msg}`,
+    unknown: 'Unbekannt',
+  },
+  en: {
+    grouped: '🗂️ Grouped',
+    filter: '🔍 Filter',
+    graph: '🌐 Graph',
+    family: 'Family',
+    person: 'Person',
+    location: 'Location',
+    country: 'Country',
+    allFamilies: 'All Families',
+    allPersons: 'All Persons',
+    allCountries: 'All Countries',
+    resetFilters: '✕ Reset Filters',
+    searchingPhotos: 'Searching Photos...',
+    noPhotos: 'No photos found.',
+    groupingPhotos: 'Grouping photos...',
+    noGroupedPhotos: 'No grouped photos found.',
+    collapse: '▲ Collapse',
+    showAll: (count) => `▼ Show all (${count} Images)`,
+    hello: (name) => `Hello, ${name} 👋`,
+    guest: 'Guest',
+    logout: 'Logout',
+    nasLogin: 'NAS Login',
+    account: 'Account',
+    password: 'Password',
+    otp: 'OTP Code (Optional)',
+    loggingIn: 'Logging in...',
+    login: 'Login',
+    loading: '🚀 GraphStation is loading...',
+    error: (msg) => `❌ Error: ${msg}`,
+    unknown: 'Unknown',
+  }
+};
+
+const getInitialLanguage = () => {
+  const stored = localStorage.getItem('language');
+  if (stored === 'de' || stored === 'en') return stored;
+  
+  const browserLang = navigator.language || navigator.userLanguage || '';
+  if (browserLang.toLowerCase().startsWith('de')) {
+    return 'de';
+  }
+  return 'en';
+};
 
 function App() {
+  const [language, setLanguage] = useState(getInitialLanguage);
+
+  const changeLanguage = (lang) => {
+    setLanguage(lang);
+    localStorage.setItem('language', lang);
+  };
+
+  const t = (key, ...args) => {
+    const entry = translations[language]?.[key] || translations['en']?.[key];
+    if (typeof entry === 'function') return entry(...args);
+    return entry || key;
+  };
+
   const [authData, setAuthData] = useState({
     sid: getCookie('sid'),
     synotoken: getCookie('synotoken')
@@ -298,14 +386,36 @@ function App() {
 
   if (!authData.sid || !authData.synotoken) {
     return (
-      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', position: 'relative' }}>
+        <div style={{ position: 'absolute', top: '1.5rem', right: '2rem', zIndex: 10 }}>
+          <div className="language-selector" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '2px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <select
+              value={language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              style={{
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                border: 'none',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                outline: 'none',
+                fontFamily: 'inherit'
+              }}
+            >
+              <option value="de" style={{ background: '#1e293b', color: 'white' }}>DE</option>
+              <option value="en" style={{ background: '#1e293b', color: 'white' }}>EN</option>
+            </select>
+          </div>
+        </div>
         <div className="login-card" style={{ background: '#1e293b', padding: '2rem', borderRadius: '8px', width: '300px', border: '1px solid #334155' }}>
-          <h2 style={{ marginTop: 0, marginBottom: '1.5rem', textAlign: 'center' }}>NAS Login</h2>
+          <h2 style={{ marginTop: 0, marginBottom: '1.5rem', textAlign: 'center' }}>{t('nasLogin')}</h2>
           {loginError && <div style={{ color: '#ef4444', marginBottom: '1rem', fontSize: '0.9rem', textAlign: 'center' }}>{loginError}</div>}
           <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <input 
               type="text" 
-              placeholder="Account" 
+              placeholder={t('account')} 
               value={loginForm.account}
               onChange={e => setLoginForm({...loginForm, account: e.target.value})}
               required
@@ -313,7 +423,7 @@ function App() {
             />
             <input 
               type="password" 
-              placeholder="Passwort" 
+              placeholder={t('password')} 
               value={loginForm.password}
               onChange={e => setLoginForm({...loginForm, password: e.target.value})}
               required
@@ -321,7 +431,7 @@ function App() {
             />
             <input 
               type="text" 
-              placeholder="OTP Code (Optional)" 
+              placeholder={t('otp')} 
               value={loginForm.otp}
               onChange={e => setLoginForm({...loginForm, otp: e.target.value})}
               style={{ padding: '0.75rem', borderRadius: '4px', border: '1px solid #475569', background: '#0f172a', color: 'white' }}
@@ -331,7 +441,7 @@ function App() {
               disabled={isLoggingIn}
               style={{ padding: '0.75rem', borderRadius: '4px', border: 'none', background: '#3b82f6', color: 'white', fontWeight: 'bold', cursor: isLoggingIn ? 'not-allowed' : 'pointer', marginTop: '0.5rem' }}
             >
-              {isLoggingIn ? 'Logge ein...' : 'Einloggen'}
+              {isLoggingIn ? t('loggingIn') : t('login')}
             </button>
           </form>
         </div>
@@ -339,9 +449,9 @@ function App() {
     );
   }
 
-  if (loading) return <div className="loading">🚀 GraphStation lädt...</div>;
+  if (loading) return <div className="loading">{t('loading')}</div>;
 
-  if (error) return <div className="error">❌ Fehler: {error}</div>;
+  if (error) return <div className="error">{t('error', error)}</div>;
 
   return (
     <div className="app-container">
@@ -351,19 +461,19 @@ function App() {
             className={`nav-item ${viewMode === 'group' ? 'active' : ''}`}
             onClick={() => setViewMode('group')}
           >
-            🗂️ Gruppiert
+            {t('grouped')}
           </button>
           <button 
             className={`nav-item ${viewMode === 'filter' ? 'active' : ''}`}
             onClick={() => setViewMode('filter')}
           >
-            🔍 Filtern
+            {t('filter')}
           </button>
           <button 
             className={`nav-item ${viewMode === 'graph' ? 'active' : ''}`}
             onClick={() => setViewMode('graph')}
           >
-            🌐 Graph
+            {t('graph')}
           </button>
         </nav>
       </aside>
@@ -398,10 +508,31 @@ function App() {
             ))}
           </div>
 
+          <div className="language-selector" style={{ display: 'flex', alignItems: 'center', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', padding: '2px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <select
+              value={language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              style={{
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                border: 'none',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                outline: 'none',
+                fontFamily: 'inherit'
+              }}
+            >
+              <option value="de" style={{ background: '#1e293b', color: 'white' }}>DE</option>
+              <option value="en" style={{ background: '#1e293b', color: 'white' }}>EN</option>
+            </select>
+          </div>
+
           <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span>{user ? `Hallo, ${user} 👋` : 'Gast'}</span>
+            <span>{user ? t('hello', user) : t('guest')}</span>
             <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #475569', color: '#94a3b8', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
-              Logout
+              {t('logout')}
             </button>
           </div>
         </div>
@@ -412,13 +543,13 @@ function App() {
           <div className="grid-container">
             <div className="filter-bar">
               <div className="filter-group">
-                <label htmlFor="filter-family">Familie</label>
+                <label htmlFor="filter-family">{t('family')}</label>
                 <select
                   id="filter-family"
                   value={selectedFamily}
                   onChange={(e) => setSelectedFamily(e.target.value)}
                 >
-                  <option value="">Alle Familien</option>
+                  <option value="">{t('allFamilies')}</option>
                   {filters.families.map(fam => (
                     <option key={fam} value={fam}>{fam}</option>
                   ))}
@@ -426,13 +557,13 @@ function App() {
               </div>
 
               <div className="filter-group">
-                <label htmlFor="filter-person">Person</label>
+                <label htmlFor="filter-person">{t('person')}</label>
                 <select
                   id="filter-person"
                   value={selectedPerson}
                   onChange={(e) => setSelectedPerson(e.target.value)}
                 >
-                  <option value="">Alle Personen</option>
+                  <option value="">{t('allPersons')}</option>
                   {filters.persons.map(pers => (
                     <option key={pers} value={pers}>{pers}</option>
                   ))}
@@ -440,13 +571,13 @@ function App() {
               </div>
 
               <div className="filter-group">
-                <label htmlFor="filter-country">Land</label>
+                <label htmlFor="filter-country">{t('country')}</label>
                 <select
                   id="filter-country"
                   value={selectedCountry}
                   onChange={(e) => setSelectedCountry(e.target.value)}
                 >
-                  <option value="">Alle Länder</option>
+                  <option value="">{t('allCountries')}</option>
                   {filters.countries.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
@@ -462,7 +593,7 @@ function App() {
                     setSelectedCountry('');
                   }}
                 >
-                  ✕ Filter zurücksetzen
+                  {t('resetFilters')}
                 </button>
               )}
             </div>
@@ -478,13 +609,13 @@ function App() {
                       onError={handleImageError}
                     />
                     <div className="photo-date">
-                      {new Date(photo.takentime * 1000).toLocaleDateString()}
+                      {new Date(photo.takentime * 1000).toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US')}
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="no-photos">
-                  {photosLoading ? 'Suche Fotos...' : 'Keine Fotos gefunden.'}
+                  {photosLoading ? t('searchingPhotos') : t('noPhotos')}
                 </div>
               )}
             </div>
@@ -499,19 +630,19 @@ function App() {
                   className={`group-chip ${groupKey === 'family' ? 'active' : ''}`}
                   onClick={() => setGroupKey('family')}
                 >
-                  👪 Familie
+                  👪 {t('family')}
                 </button>
                 <button
                   className={`group-chip ${groupKey === 'person' ? 'active' : ''}`}
                   onClick={() => setGroupKey('person')}
                 >
-                  👤 Person
+                  👤 {t('person')}
                 </button>
                 <button
                   className={`group-chip ${groupKey === 'location' ? 'active' : ''}`}
                   onClick={() => setGroupKey('location')}
                 >
-                  📍 Land/Ort
+                  📍 {t('location')}
                 </button>
               </div>
             </div>
@@ -549,7 +680,7 @@ function App() {
                             className="group-expand-btn"
                             onClick={() => toggleGroup(group.group_name)}
                           >
-                            {isExpanded ? '▲ Einklappen' : `▼ Alle anzeigen (${group.photos.length} Bilder)`}
+                            {isExpanded ? t('collapse') : t('showAll', group.photos.length)}
                           </button>
                         )}
                       </div>
@@ -563,7 +694,7 @@ function App() {
                               onError={handleImageError}
                             />
                             <div className="photo-date">
-                              {photo.takentime ? new Date(photo.takentime * 1000).toLocaleDateString() : 'Unbekannt'}
+                              {photo.takentime ? new Date(photo.takentime * 1000).toLocaleDateString(language === 'de' ? 'de-DE' : 'en-US') : t('unknown')}
                             </div>
                           </div>
                         ))}
@@ -573,7 +704,7 @@ function App() {
                 })
               ) : (
                 <div className="no-photos">
-                  {groupedLoading ? 'Gruppiere Fotos...' : 'Keine gruppierten Fotos gefunden.'}
+                  {groupedLoading ? t('groupingPhotos') : t('noGroupedPhotos')}
                 </div>
               )}
             </div>
@@ -674,7 +805,7 @@ function App() {
           </div>
           {selectedPhoto.takentime && (
             <div className="overlay-metadata" onClick={(e) => e.stopPropagation()}>
-              📅 {new Date(selectedPhoto.takentime * 1000).toLocaleString()}
+              📅 {new Date(selectedPhoto.takentime * 1000).toLocaleString(language === 'de' ? 'de-DE' : 'en-US')}
             </div>
           )}
         </div>
