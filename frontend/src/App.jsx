@@ -62,6 +62,7 @@ const translations = {
     noGroupedPhotos: 'Keine gruppierten Fotos gefunden.',
     collapse: '▲ Einklappen',
     showAll: (count) => `▼ Alle anzeigen (${count} Bilder)`,
+    imagesCount: (count) => count === 1 ? '1 Bild' : `${count} Bilder`,
     hello: (name) => `Hallo, ${name} 👋`,
     guest: 'Gast',
     logout: 'Logout',
@@ -93,6 +94,7 @@ const translations = {
     noGroupedPhotos: 'No grouped photos found.',
     collapse: '▲ Collapse',
     showAll: (count) => `▼ Show all (${count} Images)`,
+    imagesCount: (count) => count === 1 ? '1 Image' : `${count} Images`,
     hello: (name) => `Hello, ${name} 👋`,
     guest: 'Guest',
     logout: 'Logout',
@@ -666,6 +668,20 @@ function App() {
                   const hasMoreThanOneRow = group.photos.length > buttonThreshold;
                   const visiblePhotos = isExpanded ? group.photos : group.photos.slice(0, domLimit);
 
+                  // Calculate youngest and oldest photo years
+                  const years = group.photos
+                    .map(p => p.takentime)
+                    .filter(t => typeof t === 'number' && t > 0)
+                    .map(t => new Date(t * 1000).getFullYear());
+                  
+                  let groupMeta = "";
+                  if (years.length > 0) {
+                    const maxYear = Math.max(...years);
+                    const minYear = Math.min(...years);
+                    const yearRange = maxYear === minYear ? `${maxYear}` : `${maxYear}-${minYear}`;
+                    groupMeta = `(${yearRange})`;
+                  }
+
                   return (
                     <div key={group.group_name} className="group-section">
                       <div className="group-section-header">
@@ -673,15 +689,19 @@ function App() {
                           {groupKey === 'family' && '👪 '}
                           {groupKey === 'person' && '👤 '}
                           {groupKey === 'location' && '📍 '}
-                          {group.group_name} <span className="group-count">({group.photos.length})</span>
+                          {group.group_name} {groupMeta && <span className="group-count">{groupMeta}</span>}
                         </h2>
-                        {hasMoreThanOneRow && (
+                        {hasMoreThanOneRow ? (
                           <button 
                             className="group-expand-btn"
                             onClick={() => toggleGroup(group.group_name)}
                           >
                             {isExpanded ? t('collapse') : t('showAll', group.photos.length)}
                           </button>
+                        ) : (
+                          <span className="group-info-badge">
+                            {t('imagesCount', group.photos.length)}
+                          </span>
                         )}
                       </div>
                       <div className={`photo-grid size-${thumbnailSize} ${!isExpanded ? 'collapsed' : ''}`}>
