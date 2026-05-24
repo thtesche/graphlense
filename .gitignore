@@ -46,3 +46,11 @@ venv/
 data/
 log/
 users.txt
+
+# Python & Pytest Cache / Coverage
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.coverage
+htmlcov/
+session_cache.json
