@@ -75,6 +75,7 @@ deploy_docker() {
         --exclude='backend/tests' \
         --exclude='frontend/node_modules' \
         --exclude='frontend/dist' \
+        --exclude='frontend/coverage' \
         --exclude='.git' \
         -czf graphstation_docker.tar.gz \
         backend frontend docker docker-compose.yml users.txt .env
