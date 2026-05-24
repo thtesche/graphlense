@@ -6,6 +6,9 @@ WORKDIR /app
 ARG VITE_SYNOLOGY_URL
 ENV VITE_SYNOLOGY_URL=$VITE_SYNOLOGY_URL
 
+ARG VITE_DEV_MODE
+ENV VITE_DEV_MODE=$VITE_DEV_MODE
+
 # Install dependencies first for better caching
 COPY frontend/package*.json ./
 RUN npm install

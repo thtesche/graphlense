@@ -208,6 +208,7 @@ function App() {
 
   const fgRef = useRef();
   const modalFgRef = useRef();
+  const shouldZoomToFit = useRef(true);
   const imageCache = useRef({});
 
   const [clickedNode, setClickedNode] = useState(null);
@@ -350,16 +351,6 @@ function App() {
     const nodes = [];
     const links = [];
 
-    const photoNodeId = String(selectedPhoto.id);
-    nodes.push({
-      id: photoNodeId,
-      unit_id: selectedPhoto.id,
-      cache_key: selectedPhoto.cache_key,
-      type: 'Photo',
-      name: `Photo ${selectedPhoto.id}`,
-      val: 5
-    });
-
     if (photoDetails.persons_in_photo) {
       photoDetails.persons_in_photo.forEach(person => {
         const personNodeId = `person_${person}`;
@@ -371,7 +362,6 @@ function App() {
           color: '#fbbf24',
           val: 3
         });
-        links.push({ source: photoNodeId, target: personNodeId });
       });
     }
 
@@ -406,6 +396,16 @@ function App() {
     return { nodes, links };
   }, [selectedPhoto, photoDetails]);
 
+  const showModalGraph = useMemo(() => {
+    return !!(
+      photoDetails &&
+      photoDetails.persons_in_photo &&
+      photoDetails.persons_in_photo.length > 0 &&
+      photoDetails.families &&
+      photoDetails.families.length > 0
+    );
+  }, [photoDetails]);
+
   const modalHighlightNodes = useMemo(() => {
     const set = new Set();
     if (hoverNode) {
@@ -438,9 +438,11 @@ function App() {
 
   // Clustering forces for the GraphView
   useEffect(() => {
-    if (fgRef.current && viewMode === 'graph') {
-      const fg = fgRef.current;
-      fg.d3ReheatSimulation();
+    if (viewMode === 'graph') {
+      shouldZoomToFit.current = true;
+      if (fgRef.current) {
+        fgRef.current.d3ReheatSimulation();
+      }
     }
   }, [viewMode, displayGraphData]);
 
@@ -520,6 +522,21 @@ function App() {
     setSelectedPerson('');
     setSelectedCountry('');
     setFilters({ families: [], persons: [], countries: [] });
+  };
+
+  const handleUserClick = () => {
+    if (import.meta.env.VITE_DEV_MODE === 'true') {
+      const sid = getCookie('sid') || '';
+      const synotoken = getCookie('synotoken') || '';
+      const textToCopy = `sid: ${sid}\nsynotoken: ${synotoken}`;
+      navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+          console.log('Dev credentials copied to clipboard');
+        })
+        .catch(err => {
+          console.error('Could not copy text: ', err);
+        });
+    }
   };
 
   // Fetch filters and graph data once upon login
@@ -713,48 +730,32 @@ function App() {
     ctx.globalAlpha = isDimmed ? 0.2 : 1.0;
 
     const size = (node.val || 3) * (node.type === 'Photo' ? 3 : 1);
+    
+    ctx.beginPath();
+    ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false);
+
     if (node.type === 'Photo') {
-      const imgUrl = getThumbnailUrl(node.unit_id, node.cache_key);
+      ctx.fillStyle = '#0284c7'; // Nice solid blue for photo nodes
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8'; // Glowing light-blue border
+      ctx.lineWidth = 2 / globalScale;
+      ctx.stroke();
 
-      const imageKey = `${node.id}_${thumbnailSize}`;
-      if (!imageCache.current[imageKey]) {
-        const img = new Image();
-        img.src = imgUrl;
-        img.retries = 0;
-        img.onerror = () => {
-          if (img.retries < 5) {
-            setTimeout(() => {
-              img.retries++;
-              const originalSrc = imgUrl.split('&retry=')[0];
-              img.src = `${originalSrc}&retry=${Date.now()}`;
-            }, 2000);
-          }
-        };
-        imageCache.current[imageKey] = img;
-      }
-
-      const img = imageCache.current[imageKey];
-
-      ctx.save();
+      // Camera lens indicator (two concentric circles in center)
       ctx.beginPath();
-      ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false);
-      ctx.clip();
-      try {
-        if (img.complete && img.naturalWidth !== 0) {
-          ctx.drawImage(img, node.x - size, node.y - size, size * 2, size * 2);
-        } else {
-          ctx.fillStyle = '#1e293b';
-          ctx.fill();
-        }
-      } catch (e) { }
+      ctx.arc(node.x, node.y, size * 0.45, 0, 2 * Math.PI, false);
+      ctx.fillStyle = '#0f172a'; // dark center
+      ctx.fill();
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 1 / globalScale;
       ctx.stroke();
-      ctx.restore();
-    } else {
-      // Metadata node
+
+      // Lens reflection highlight
       ctx.beginPath();
-      ctx.arc(node.x, node.y, size, 0, 2 * Math.PI, false);
+      ctx.arc(node.x - size * 0.15, node.y - size * 0.15, size * 0.1, 0, 2 * Math.PI, false);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.fill();
+    } else {
       ctx.fillStyle = node.color || '#818cf8';
       ctx.fill();
 
@@ -852,7 +853,16 @@ function App() {
           </div>
 
           <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <span>{user ? t('hello', user) : t('guest')}</span>
+            <span 
+              onClick={handleUserClick}
+              style={{
+                cursor: import.meta.env.VITE_DEV_MODE === 'true' ? 'pointer' : 'default',
+                textDecoration: import.meta.env.VITE_DEV_MODE === 'true' ? 'underline dotted rgba(255, 255, 255, 0.3)' : 'none'
+              }}
+              title={import.meta.env.VITE_DEV_MODE === 'true' ? 'Copy dev auth to clipboard' : ''}
+            >
+              {user ? t('hello', user) : t('guest')}
+            </span>
             <button onClick={handleLogout} style={{ background: 'transparent', border: '1px solid #475569', color: '#94a3b8', padding: '0.25rem 0.5rem', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}>
               {t('logout')}
             </button>
@@ -1084,6 +1094,16 @@ function App() {
                 }}
                 nodePointerAreaPaint={sharedNodePointerAreaPaint}
                 nodeCanvasObject={(node, ctx, globalScale) => sharedNodeCanvasObject(node, ctx, globalScale, highlightNodes)}
+                cooldownTicks={100}
+                onEngineStop={() => {
+                  if (shouldZoomToFit.current && fgRef.current && displayGraphData?.nodes?.length > 0) {
+                    const hasLayout = displayGraphData.nodes.some(n => n.x !== undefined);
+                    if (hasLayout) {
+                      fgRef.current.zoomToFit(400, 80);
+                      shouldZoomToFit.current = false;
+                    }
+                  }
+                }}
                 onNodeClick={node => {
                   const isSame = clickedNode && String(node.id) === String(clickedNode.id);
                   setClickedNode(isSame ? null : node);
@@ -1118,7 +1138,14 @@ function App() {
         <div className="overlay-modal" onClick={handleCloseOverlay}>
           <button className="overlay-close" onClick={handleCloseOverlay}>✕</button>
           
-          <div className="overlay-left-pane" onClick={(e) => e.stopPropagation()}>
+          <div 
+            className="overlay-left-pane" 
+            style={{ 
+              flex: showModalGraph ? '0 0 66.666%' : '0 0 100%',
+              borderRight: showModalGraph ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="overlay-image-container">
               <img 
                 className="overlay-image"
@@ -1160,43 +1187,49 @@ function App() {
             </div>
           </div>
           
-          <div className="overlay-right-pane" onClick={(e) => e.stopPropagation()}>
-            <ErrorBoundary>
-              <ForceGraph2D
-                ref={modalFgRef}
-                width={Math.floor(windowSize.width / 3)}
-                height={windowSize.height}
-                graphData={modalGraphData}
-                nodeId="id"
-                nodeLabel="name"
-                nodeColor={node => node.color || '#38bdf8'}
-                linkColor={link => {
-                  if (!hoverNode) return 'rgba(255, 255, 255, 0.2)';
-                  const sourceId = String(typeof link.source === 'object' ? link.source.id : link.source);
-                  const targetId = String(typeof link.target === 'object' ? link.target.id : link.target);
-                  return modalHighlightLinks.has(`${sourceId}-${targetId}`) ? 'rgba(244, 63, 94, 0.8)' : 'rgba(255, 255, 255, 0.2)';
-                }}
-                linkWidth={link => {
-                  if (!hoverNode) return 1;
-                  const sourceId = String(typeof link.source === 'object' ? link.source.id : link.source);
-                  const targetId = String(typeof link.target === 'object' ? link.target.id : link.target);
-                  return modalHighlightLinks.has(`${sourceId}-${targetId}`) ? 2 : 1;
-                }}
-                nodeCanvasObject={(node, ctx, globalScale) => sharedNodeCanvasObject(node, ctx, globalScale, modalHighlightNodes)}
-                nodePointerAreaPaint={sharedNodePointerAreaPaint}
-                onEngineStop={() => {
-                  if (modalFgRef.current) {
-                    modalFgRef.current.zoomToFit(400, 50);
-                  }
-                }}
-                onNodeHover={node => {
-                  if (hoverNode?.id !== node?.id) {
-                    setHoverNode(node || null);
-                  }
-                }}
-              />
-            </ErrorBoundary>
-          </div>
+          {showModalGraph && (
+            <div className="overlay-right-pane" onClick={(e) => e.stopPropagation()}>
+              <ErrorBoundary>
+                <ForceGraph2D
+                  ref={modalFgRef}
+                  width={Math.floor(windowSize.width / 3)}
+                  height={windowSize.height}
+                  graphData={modalGraphData}
+                  nodeId="id"
+                  nodeLabel="name"
+                  nodeColor={node => node.color || '#38bdf8'}
+                  linkColor={link => {
+                    if (!hoverNode) return 'rgba(255, 255, 255, 0.2)';
+                    const sourceId = String(typeof link.source === 'object' ? link.source.id : link.source);
+                    const targetId = String(typeof link.target === 'object' ? link.target.id : link.target);
+                    return modalHighlightLinks.has(`${sourceId}-${targetId}`) ? 'rgba(244, 63, 94, 0.8)' : 'rgba(255, 255, 255, 0.2)';
+                  }}
+                  linkWidth={link => {
+                    if (!hoverNode) return 1;
+                    const sourceId = String(typeof link.source === 'object' ? link.source.id : link.source);
+                    const targetId = String(typeof link.target === 'object' ? link.target.id : link.target);
+                    return modalHighlightLinks.has(`${sourceId}-${targetId}`) ? 2 : 1;
+                  }}
+                  nodeCanvasObject={(node, ctx, globalScale) => sharedNodeCanvasObject(node, ctx, globalScale, modalHighlightNodes)}
+                  nodePointerAreaPaint={sharedNodePointerAreaPaint}
+                  cooldownTicks={100}
+                  onEngineStop={() => {
+                    if (modalFgRef.current && modalGraphData?.nodes?.length > 0) {
+                      const hasLayout = modalGraphData.nodes.some(n => n.x !== undefined);
+                      if (hasLayout) {
+                        modalFgRef.current.zoomToFit(400, 50);
+                      }
+                    }
+                  }}
+                  onNodeHover={node => {
+                    if (hoverNode?.id !== node?.id) {
+                      setHoverNode(node || null);
+                    }
+                  }}
+                />
+              </ErrorBoundary>
+            </div>
+          )}
         </div>
       )}
     </div>

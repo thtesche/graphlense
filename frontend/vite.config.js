@@ -14,6 +14,7 @@ try {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  envDir: '../',
   server: { 
     https: httpsConfig,
     host: '0.0.0.0'

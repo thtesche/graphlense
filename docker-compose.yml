@@ -47,6 +47,7 @@ services:
       dockerfile: docker/frontend.Dockerfile
       args:
         - VITE_SYNOLOGY_URL=${SYNOLOGY_URL:-}
+        - VITE_DEV_MODE=${VITE_DEV_MODE:-false}
     container_name: graphstation-frontend
     restart: unless-stopped
     ports:

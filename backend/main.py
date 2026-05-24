@@ -162,11 +162,11 @@ def get_filters():
             MATCH (u:Owner {name: $username})<-[:OWNED_BY]-(p:Photo)
             OPTIONAL MATCH (p)-[:HAS_PERSON]->(pe:Person)
             OPTIONAL MATCH (pe)-[:BELONGS_TO_FAMILY]->(f:Family)
-            OPTIONAL MATCH (p)-[:LOCATED_AT]->(l:Location)-[:PART_OF*0..5]->(c:Country)
-            RETURN 
-              collect(DISTINCT f.name) as families, 
-              collect(DISTINCT pe.name) as persons, 
-              collect(DISTINCT c.name) as countries
+            WITH collect(DISTINCT f.name) as families, collect(DISTINCT pe.name) as persons, u
+            OPTIONAL MATCH (u)<-[:OWNED_BY]-(p2:Photo)-[:LOCATED_AT]->(l:Location)
+            WITH DISTINCT l, families, persons
+            OPTIONAL MATCH (l)-[:PART_OF*0..5]->(c:Country)
+            RETURN families, persons, collect(DISTINCT c.name) as countries
             """
             result = session.run(query, username=username)
             record = result.single()
@@ -249,6 +249,11 @@ def get_photo_details(photo_id):
         return jsonify({"error": "Database driver not initialized"}), 500
 
     try:
+        try:
+            db_photo_id = int(photo_id)
+        except ValueError:
+            db_photo_id = photo_id
+
         with driver.session() as session:
             query = """
             MATCH (u:Owner {name: $username})<-[:OWNED_BY]-(p:Photo {id: $photo_id})
@@ -257,7 +262,7 @@ def get_photo_details(photo_id):
             OPTIONAL MATCH (f)-[:BELONGS_TO_FAMILY]-(all_pe:Person)
             RETURN pe.name AS person_in_photo, f.name AS family_name, collect(DISTINCT all_pe.name) AS family_members
             """
-            result = session.run(query, username=username, photo_id=photo_id)
+            result = session.run(query, username=username, photo_id=db_photo_id)
             
             data = [record.data() for record in result]
             
@@ -325,24 +330,24 @@ def get_grouped_photos():
                 """
             elif group_by == 'location':
                 query = """
-                MATCH (u:Owner {name: $username})<-[:OWNED_BY]-(p:Photo)
-                MATCH (p)-[:LOCATED_AT]->(l:Location)
-                OPTIONAL MATCH (l)-[:PART_OF*0..5]->(s:Location {type: "State"})
-                OPTIONAL MATCH (l)-[:PART_OF*0..5]->(c:Location {type: "Country"})
-                WITH p, 
+                MATCH (u:Owner {name: $username})<-[:OWNED_BY]-(p:Photo)-[:LOCATED_AT]->(l:Location)
+                WITH l, collect(DISTINCT {id: p.id, cache_key: p.cache_key, takentime: p.takentime}) as photos
+                OPTIONAL MATCH path = (l)-[:PART_OF*0..5]->(c:Country)
+                WITH photos, l, c, [n in nodes(path) WHERE n.type = "State"][0] as s
+                WITH photos,
                      CASE WHEN c.name IS NOT NULL AND trim(c.name) <> "" THEN trim(c.name) ELSE null END as cn,
                      CASE WHEN s.name IS NOT NULL AND trim(s.name) <> "" THEN trim(s.name) ELSE null END as sn,
                      CASE WHEN l.name IS NOT NULL AND trim(l.name) <> "" THEN trim(l.name) ELSE null END as ln
-                WITH p, cn,
+                WITH photos, cn,
                      CASE WHEN sn = cn THEN null ELSE sn END as sn,
                      ln
-                WITH p,
+                WITH photos,
                      CASE
                        WHEN cn IS NOT NULL AND sn IS NOT NULL THEN cn + " - " + sn
                        ELSE COALESCE(cn, sn, ln, "Unbekannter Ort")
                      END as loc_name
-                WHERE loc_name IS NOT NULL AND trim(loc_name) <> ""
-                RETURN loc_name as group_name, collect(DISTINCT {id: p.id, cache_key: p.cache_key, takentime: p.takentime}) as photos
+                UNWIND photos as photo
+                RETURN loc_name as group_name, collect(DISTINCT photo) as photos
                 ORDER BY group_name
                 """
             else:
