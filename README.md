@@ -1,5 +1,10 @@
 # GraphStation 📸🕸️
 
+[![CI](https://github.com/thtesche/graphstation/actions/workflows/ci.yml/badge.svg)](https://github.com/thtesche/graphstation/actions/workflows/ci.yml)
+[![Frontend](https://img.shields.io/badge/Frontend-React-61DAFB?logo=react&logoColor=black)](frontend/)
+[![Backend](https://img.shields.io/badge/Backend-Python-3776AB?logo=python&logoColor=white)](backend/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 GraphStation is a lightweight, non-linear photo browser and gallery designed specifically for Synology NAS users. Instead of navigating rigid folder structures, GraphStation allows you to explore your photo collection through its underlying graph of relationships—connecting people, locations, objects, and time.
 
 ## 🌟 Features
