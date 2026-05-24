@@ -53,7 +53,6 @@ If you prefer to host GraphStation on a separate Linux server, Mini-PC, or cloud
 
 For detailed setup steps, see our [Docker Deployment Guide](docs/deployment_docker.md).
 
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
