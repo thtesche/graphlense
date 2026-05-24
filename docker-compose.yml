@@ -26,17 +26,30 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: docker/backend.Dockerfile
     container_name: graphstation-api
     restart: unless-stopped
     ports:
       - "5000:5000"
     env_file:
-      - ./backend/.env
+      - .env
     environment:
       - MEMGRAPH_HOST=memgraph-db
     depends_on:
       - memgraph-db
     volumes:
       - ./backend/session_cache.json:/app/session_cache.json
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        - VITE_SYNOLOGY_URL=${SYNOLOGY_URL:-}
+    container_name: graphstation-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api

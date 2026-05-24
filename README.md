@@ -27,7 +27,7 @@ Before setting up GraphStation, ensure your system meets the following requireme
 
 ## 🚀 Deployment Options
 
-Currently, GraphStation is optimized for hosting all components directly on the Synology NAS. Support for hosting components on an external machine via Docker is planned for the future.
+GraphStation can be deployed natively on the Synology NAS via Web Station, or containerized on an external Linux machine or Mini-PC using Docker.
 
 ### Option A: Hosting on Synology NAS (Web Station)
 
@@ -40,19 +40,14 @@ For detailed setup and deployment instructions, see our [NAS Deployment Guide](d
 
 ### 🐳 Option B: Hosting on an External Machine (Docker)
 
-If you prefer to host GraphStation on a separate Linux server, Mini-PC, or cloud instance, you can use our Docker Compose setup.
+If you prefer to host GraphStation on a separate Linux server, Mini-PC, or cloud instance, you can use the fully automated Docker Compose setup.
 
-For manual deployment steps, see our [Docker Deployment Guide](docs/deployment_docker.md).
+1. **Local Setup:** Run `./setup_local.sh` and configure your `.env` file (ensure you set the target machine IP and your `SYNOLOGY_URL`).
+2. **Deploy via Script:** Run `./deploy.sh docker` to transfer code, build contexts, and configurations to the remote host.
+3. **Start Containers:** SSH into the remote machine, navigate to the deployment folder, and run `docker-compose up -d --build`.
 
-### 💻 Local Development
+For detailed setup steps, see our [Docker Deployment Guide](docs/deployment_docker.md).
 
-To run the application locally for development:
-1. Ensure you have run `./setup_local.sh` and configured your `.env` file.
-2. Start the frontend development server:
-   ```bash
-   cd frontend
-   npm run dev
-   ```
 
 ## 📄 License
 

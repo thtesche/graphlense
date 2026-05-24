@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Component, useMemo } from 'react';
+import React, { useState, useEffect, useRef, Component, useMemo, useCallback } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 
 
@@ -178,23 +178,12 @@ function App() {
   const [selectedPerson, setSelectedPerson] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('');
 
+
   useEffect(() => {
     setCookie('thumbnailSize', thumbnailSize, 14);
   }, [thumbnailSize]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        setSelectedPhoto(null);
-      }
-    };
-    if (selectedPhoto) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedPhoto]);
+
 
   useEffect(() => {
     if (selectedPhoto) {
@@ -218,6 +207,65 @@ function App() {
 
   const [clickedNode, setClickedNode] = useState(null);
   const [hoverNode, setHoverNode] = useState(null);
+
+  const handleCloseOverlay = useCallback(() => {
+    if (window.location.hash === '#detail') {
+      window.history.back();
+    } else {
+      setSelectedPhoto(null);
+      setClickedNode(null);
+    }
+  }, [setSelectedPhoto, setClickedNode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        handleCloseOverlay();
+      }
+    };
+    if (selectedPhoto) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedPhoto, handleCloseOverlay]);
+
+  // --- Browser History (Back Button) Management for Overlays ---
+  const overlayWasOpen = useRef(false);
+
+  useEffect(() => {
+    const isOverlayOpen = !!(selectedPhoto || clickedNode);
+    const currentHash = window.location.hash;
+    
+    if (isOverlayOpen && currentHash !== '#detail') {
+      window.history.pushState(null, '', window.location.pathname + window.location.search + '#detail');
+      overlayWasOpen.current = true;
+    } else if (!isOverlayOpen && currentHash === '#detail') {
+      if (overlayWasOpen.current) {
+        window.history.back();
+        overlayWasOpen.current = false;
+      } else {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    } else if (isOverlayOpen) {
+      overlayWasOpen.current = true;
+    } else {
+      overlayWasOpen.current = false;
+    }
+  }, [selectedPhoto, clickedNode]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash !== '#detail') {
+        if (selectedPhoto) setSelectedPhoto(null);
+        if (clickedNode) setClickedNode(null);
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [selectedPhoto, clickedNode]);
+  // -------------------------------------------------------------
 
   const filteredGraphData = useMemo(() => {
     const nodes = graphData.nodes.filter(n => n.type !== 'Object');
@@ -397,17 +445,20 @@ function App() {
 
   // Configuration - using relative paths or environment variables for API URL
   const API_BASE = import.meta.env.GRAPHSTATION_API_URL || '/graphstation-api';
-  const NAS_BASE = `${window.location.protocol}//${window.location.hostname}`;
+  // For backwards compatibility, fallback to hostname:5001 if no environment variable is provided
+  const SYNOLOGY_URL = import.meta.env.VITE_SYNOLOGY_URL 
+    ? import.meta.env.VITE_SYNOLOGY_URL.replace(/\/$/, "") 
+    : `${window.location.protocol}//${window.location.hostname}:5001`;
 
   const getThumbnailUrl = (id, cacheKey) => {
-    let url = `${NAS_BASE}:5001/synofoto/api/v2/p/Thumbnail/get?id=${id}&cache_key="${id}_${cacheKey}"&type="unit"&size="${thumbnailSize}"`;
+    let url = `${SYNOLOGY_URL}/synofoto/api/v2/p/Thumbnail/get?id=${id}&cache_key="${id}_${cacheKey}"&type="unit"&size="${thumbnailSize}"`;
     if (authData.synotoken) url += `&SynoToken=${authData.synotoken}`;
     if (authData.sid) url += `&_sid=${authData.sid}`;
     return url;
   };
 
   const getOriginalUrl = (id, cacheKey) => {
-    let url = `${NAS_BASE}:5001/webapi/entry.cgi?cache_key="${id}_${cacheKey}"&unit_id=[${id}]&api="SYNO.Foto.Download"&method="download"&version=2`;
+    let url = `${SYNOLOGY_URL}/webapi/entry.cgi?cache_key="${id}_${cacheKey}"&unit_id=[${id}]&api="SYNO.Foto.Download"&method="download"&version=2`;
     if (authData.synotoken) url += `&SynoToken=${authData.synotoken}`;
     if (authData.sid) url += `&_sid=${authData.sid}`;
     return url;
@@ -1051,7 +1102,7 @@ function App() {
                     setHoverNode(node || null);
                   }
                 }}
-                onBackgroundClick={() => setClickedNode(null)}
+                onBackgroundClick={handleCloseOverlay}
               />
             </div>
           </ErrorBoundary>
@@ -1059,8 +1110,8 @@ function App() {
       </main>
 
       {selectedPhoto && (
-        <div className="overlay-modal" onClick={() => { setSelectedPhoto(null); setClickedNode(null); }}>
-          <button className="overlay-close" onClick={() => { setSelectedPhoto(null); setClickedNode(null); }}>✕</button>
+        <div className="overlay-modal" onClick={handleCloseOverlay}>
+          <button className="overlay-close" onClick={handleCloseOverlay}>✕</button>
           
           <div className="overlay-left-pane" onClick={(e) => e.stopPropagation()}>
             <div className="overlay-image-container">

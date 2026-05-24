@@ -1,0 +1,26 @@
+# Virtual Environment
+venv
+.venv
+__pycache__
+*.pyc
+
+# Node
+node_modules
+frontend/node_modules
+frontend/dist
+
+# IDEs & System
+.DS_Store
+.git
+.github
+.cursorrules
+
+# Local configuration & cache
+.env
+.pytest_cache
+backend/.pytest_cache
+backend/__pycache__
+
+# Database/Logs
+data
+log
