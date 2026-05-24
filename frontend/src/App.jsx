@@ -187,6 +187,7 @@ function App() {
 
   useEffect(() => {
     if (selectedPhoto) {
+      document.body.style.overflow = 'hidden';
       setPhotoDetails(null); // Reset while loading
       fetch(`${API_BASE}/photo/${selectedPhoto.id}/details`, { credentials: 'include' })
         .then(res => res.json())
@@ -197,8 +198,12 @@ function App() {
         })
         .catch(err => console.error("Error fetching photo details:", err));
     } else {
+      document.body.style.overflow = '';
       setPhotoDetails(null);
     }
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [selectedPhoto]);
 
   const fgRef = useRef();
@@ -1159,7 +1164,7 @@ function App() {
             <ErrorBoundary>
               <ForceGraph2D
                 ref={modalFgRef}
-                width={windowSize.width - 450}
+                width={Math.floor(windowSize.width / 3)}
                 height={windowSize.height}
                 graphData={modalGraphData}
                 nodeId="id"
