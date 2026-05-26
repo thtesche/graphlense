@@ -214,13 +214,12 @@ function App() {
   const [clickedNode, setClickedNode] = useState(null);
   const [hoverNode, setHoverNode] = useState(null);
 
-  const handleCloseOverlay = useCallback(() => {
-    if (window.location.hash === '#detail') {
-      window.history.back();
-    } else {
-      setSelectedPhoto(null);
-      setClickedNode(null);
+  const handleCloseOverlay = useCallback((e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
     }
+    setSelectedPhoto(null);
+    setClickedNode(null);
   }, [setSelectedPhoto, setClickedNode]);
 
   useEffect(() => {
@@ -359,7 +358,7 @@ function App() {
           type: 'Person',
           label: person,
           name: person,
-          color: '#fbbf24',
+          color: '#38bdf8',
           val: 3
         });
       });

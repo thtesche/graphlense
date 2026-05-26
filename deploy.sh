@@ -88,8 +88,11 @@ deploy_docker() {
     ssh "$GRAPHSTATION_USER@$GRAPHSTATION_HOST" "rm -f $GRAPHSTATION_DOCKER_PATH/backend/Dockerfile $GRAPHSTATION_DOCKER_PATH/frontend/Dockerfile $GRAPHSTATION_DOCKER_PATH/frontend/nginx.conf $GRAPHSTATION_DOCKER_PATH/frontend/.dockerignore"
     
     rm graphstation_docker.tar.gz
-    echo "✅ Docker deployment finished!"
-    echo "👉 You can now SSH into your NAS, navigate to $GRAPHSTATION_DOCKER_PATH, and run 'docker-compose up -d --build'"
+    
+    echo "🏗️ Building and starting Docker containers on NAS..."
+    ssh "$GRAPHSTATION_USER@$GRAPHSTATION_HOST" "cd $GRAPHSTATION_DOCKER_PATH && docker-compose up -d --build"
+    
+    echo "✅ Docker deployment and build finished!"
 }
 
 case $MODE in
