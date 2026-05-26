@@ -457,14 +457,14 @@ function App() {
     : `${window.location.protocol}//${window.location.hostname}:5001`;
 
   const getThumbnailUrl = (id, cacheKey) => {
-    let url = `${SYNOLOGY_URL}/synofoto/api/v2/p/Thumbnail/get?id=${id}&cache_key="${id}_${cacheKey}"&type="unit"&size="${thumbnailSize}"`;
+    let url = `${SYNOLOGY_URL}/synofoto/api/v2/p/Thumbnail/get?id=${id}&cache_key=${id}_${cacheKey}&type=unit&size=${thumbnailSize}`;
     if (authData.synotoken) url += `&SynoToken=${authData.synotoken}`;
     if (authData.sid) url += `&_sid=${authData.sid}`;
     return url;
   };
 
   const getOriginalUrl = (id, cacheKey) => {
-    let url = `${SYNOLOGY_URL}/webapi/entry.cgi?cache_key="${id}_${cacheKey}"&unit_id=[${id}]&api="SYNO.Foto.Download"&method="download"&version=2`;
+    let url = `${SYNOLOGY_URL}/webapi/entry.cgi?cache_key=${id}_${cacheKey}&unit_id=[${id}]&api=SYNO.Foto.Download&method=download&version=2`;
     if (authData.synotoken) url += `&SynoToken=${authData.synotoken}`;
     if (authData.sid) url += `&_sid=${authData.sid}`;
     return url;
@@ -476,8 +476,8 @@ function App() {
     if (retries < 5) {
       setTimeout(() => {
         img.dataset.retries = retries + 1;
-        const originalSrc = img.src.split('&retry=')[0];
-        img.src = `${originalSrc}&retry=${Date.now()}`;
+        const originalSrc = img.src.split('#retry=')[0];
+        img.src = `${originalSrc}#retry=${Date.now()}`;
       }, 2000);
     }
   };
