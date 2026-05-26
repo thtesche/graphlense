@@ -165,7 +165,7 @@ def get_filters():
             WITH collect(DISTINCT f.name) as families, collect(DISTINCT pe.name) as persons, u
             OPTIONAL MATCH (u)<-[:OWNED_BY]-(p2:Photo)-[:LOCATED_AT]->(l:Location)
             WITH DISTINCT l, families, persons
-            OPTIONAL MATCH (l)-[:PART_OF*0..5]->(c:Country)
+            OPTIONAL MATCH (l)-[:PART_OF*0..10]->(c:Country)
             WHERE c.type = "Country"
             RETURN families, persons, collect(DISTINCT c.name) as countries
             """
@@ -216,7 +216,7 @@ def get_photos():
                 query += " MATCH (p)-[:HAS_PERSON]->(pe:Person {name: $person})"
                 params["person"] = person
             if country:
-                query += " MATCH (p)-[:LOCATED_AT]->(:Location)-[:PART_OF*0..5]->(c:Country {name: $country}) WHERE c.type = 'Country'"
+                query += " MATCH (p)-[:LOCATED_AT]->(:Location)-[:PART_OF*0..10]->(c:Country {name: $country}) WHERE c.type = 'Country'"
                 params["country"] = country
                 
             query += """
@@ -333,7 +333,7 @@ def get_grouped_photos():
                 query = """
                 MATCH (u:Owner {name: $username})<-[:OWNED_BY]-(p:Photo)-[:LOCATED_AT]->(l:Location)
                  WITH l, collect(DISTINCT {id: p.id, cache_key: p.cache_key, takentime: p.takentime}) as photos
-                 OPTIONAL MATCH path = (l)-[:PART_OF*0..5]->(c:Country)
+                 OPTIONAL MATCH path = (l)-[:PART_OF*0..10]->(c:Country)
                  WHERE c.type = "Country"
                  WITH photos, l, c, [n in nodes(path) WHERE n.type = "State"][0] as s
                 WITH photos,
